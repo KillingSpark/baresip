@@ -2059,7 +2059,7 @@ static void sipsess_cancel_handler(const struct sip_msg *msg,
 				  void *arg)
 {
 	struct call *call = arg;
-	struct sip_hdr *reason = sip_msg_hdr(msg, SIP_HDR_REASON);
+	const struct sip_hdr *reason = sip_msg_hdr(msg, SIP_HDR_REASON);
 	if (reason) {
 		info("%s: Session got canceled. Reason: %r\n", call->peer_uri, &reason->val);
 	} else {
