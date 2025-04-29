@@ -2061,9 +2061,12 @@ static void sipsess_cancel_handler(const struct sip_msg *msg,
 	struct call *call = arg;
 	const struct sip_hdr *reason = sip_msg_hdr(msg, SIP_HDR_REASON);
 	if (reason) {
-		info("%s: Session got canceled. Reason: %r\n", call->peer_uri, &reason->val);
-	} else {
-		info("%s: Session got canceled. Reason: %s\n", call->peer_uri);
+		info("%s: Session got canceled. Reason: %r\n",
+			 call->peer_uri, &reason->val);
+	}
+	else {
+		info("%s: Session got canceled.\n",
+			 call->peer_uri);
 	}
 }
 
@@ -2533,8 +2536,8 @@ static int send_invite(struct call *call)
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
-			      sipsess_close_handler, sipsess_cancel_handler, call,
-			      "Allow: %H\r\n%H%H%H%H",
+			      sipsess_close_handler, sipsess_cancel_handler,
+				  call, "Allow: %H\r\n%H%H%H%H",
 			      ua_print_allowed, call->ua,
 			      ua_print_supported, call->ua,
 			      ua_print_require, call->ua,
