@@ -2072,6 +2072,18 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 		if (call->not) {
 			(void)call_notify_sipfrag(call, 500, "%m", err);
 		}
+		if (msg) {
+			const struct sip_hdr *reason_hdr =
+				sip_msg_hdr(msg, SIP_HDR_REASON);
+			if (reason_hdr) {
+				info("%s: Session got canceled. Reason: %r\n",
+					call->peer_uri, &reason_hdr->val);
+			}
+			else {
+				info("%s: Session got canceled.\n",
+					call->peer_uri);
+			}
+		}
 	}
 	else if (msg) {
 
@@ -2086,16 +2098,6 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 		if (call->not) {
 			(void)call_notify_sipfrag(call, msg->scode,
 						  "%r", &msg->reason);
-		}
-
-		const struct sip_hdr *reason_hdr = sip_msg_hdr(msg, SIP_HDR_REASON);
-		if (reason_hdr) {
-			info("%s: Session got canceled. Reason: %r\n",
-				call->peer_uri, &reason_hdr->val);
-		}
-		else {
-			info("%s: Session got canceled.\n",
-				call->peer_uri);
 		}
 	}
 	else {
