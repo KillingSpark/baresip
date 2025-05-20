@@ -2061,26 +2061,16 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 {
 	struct call *call = arg;
 	char reason[128] = "";
+	const struct sip_hdr *reason_hdr = NULL;
 
 	MAGIC_CHECK(call);
 
 	if (err) {
 		info("%s: session closed: %m\n", call->peer_uri, err);
+		(void)re_snprintf(reason, sizeof(reason), "%m", err);
 
 		if (msg) {
-			const struct sip_hdr *reason_hdr =
-				sip_msg_hdr(msg, SIP_HDR_REASON);
-			if (reason_hdr) {
-				info("Cancel reason: %r\n", &reason_hdr->val);
-				(void)re_snprintf(reason, sizeof(reason),
-								  "%m %r", err, &reason_hdr->val);
-			}
-			else {
-				(void)re_snprintf(reason, sizeof(reason), "%m", err);
-			}
-		}
-		else {
-			(void)re_snprintf(reason, sizeof(reason), "%m", err);
+			reason_hdr = sip_msg_hdr(msg, SIP_HDR_REASON);
 		}
 
 		if (call->not) {
@@ -2091,17 +2081,10 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 
 		call->scode = msg->scode;
 
-		const struct sip_hdr *reason_hdr =
-			sip_msg_hdr(msg, SIP_HDR_REASON);
-		if (reason_hdr) {
-			info("Cancel reason: %r\n", &reason_hdr->val);
-			(void)re_snprintf(reason, sizeof(reason), "%u %r %r",
-				msg->scode, &msg->reason, reason_hdr->val);
-		}
-		else {
-			(void)re_snprintf(reason, sizeof(reason), "%u %r",
-				msg->scode, &msg->reason);
-		}
+		reason_hdr = sip_msg_hdr(msg, SIP_HDR_REASON);
+
+		(void)re_snprintf(reason, sizeof(reason), "%u %r",
+			msg->scode, &msg->reason);
 
 		info("%s: session closed: %u %r\n",
 		     call->peer_uri, msg->scode, &msg->reason);
@@ -2119,7 +2102,15 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 		xfer_cleanup(call, reason);
 
 	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
+
+	if (reason_hdr) {
+		info("Cancel reason: %r\n", &reason_hdr->val);
+		call_event_handler(call, CALL_EVENT_CLOSED, "%s %r", reason, &reason_hdr->val);
+	}
+	else {
+		call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
+	}
+
 }
 
 
