@@ -2067,30 +2067,41 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 	if (err) {
 		info("%s: session closed: %m\n", call->peer_uri, err);
 
-		(void)re_snprintf(reason, sizeof(reason), "%m", err);
-
-		if (call->not) {
-			(void)call_notify_sipfrag(call, 500, "%m", err);
-		}
 		if (msg) {
 			const struct sip_hdr *reason_hdr =
 				sip_msg_hdr(msg, SIP_HDR_REASON);
 			if (reason_hdr) {
-				info("%s: Session got canceled. Reason: %r\n",
-					call->peer_uri, &reason_hdr->val);
+				info("Cancel reason: %r\n", &reason_hdr->val);
+				(void)re_snprintf(reason, sizeof(reason),
+								  "%m %r", err, &reason_hdr->val);
 			}
 			else {
-				info("%s: Session got canceled.\n",
-					call->peer_uri);
+				(void)re_snprintf(reason, sizeof(reason), "%m", err);
 			}
+		}
+		else {
+			(void)re_snprintf(reason, sizeof(reason), "%m", err);
+		}
+
+		if (call->not) {
+			(void)call_notify_sipfrag(call, 500, "%m", err);
 		}
 	}
 	else if (msg) {
 
 		call->scode = msg->scode;
 
-		(void)re_snprintf(reason, sizeof(reason), "%u %r",
-				  msg->scode, &msg->reason);
+		const struct sip_hdr *reason_hdr =
+			sip_msg_hdr(msg, SIP_HDR_REASON);
+		if (reason_hdr) {
+			info("Cancel reason: %r\n", &reason_hdr->val);
+			(void)re_snprintf(reason, sizeof(reason), "%u %r %r",
+				msg->scode, &msg->reason, reason_hdr->val);
+		}
+		else {
+			(void)re_snprintf(reason, sizeof(reason), "%u %r",
+				msg->scode, &msg->reason);
+		}
 
 		info("%s: session closed: %u %r\n",
 		     call->peer_uri, msg->scode, &msg->reason);
